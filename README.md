@@ -1,1 +1,3 @@
 # bincoder
+
+Added travis configuration
