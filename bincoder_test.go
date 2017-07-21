@@ -37,7 +37,7 @@ func (wire *BinWriter) foo(f *foo) {
 }
 
 func encodeFooSlice(f *[]foo, w testCoder) {
-	w.slice(
+	w.Slice(
 		func() int { return len(*f) },
 		func(size int) { *f = make([]foo, size) },
 		func(i int) { w.foo(&(*f)[i]) },
@@ -61,16 +61,16 @@ func (wire *BinWriter) bar(f *bar) {
 }
 
 func (f *foo) encode(w Bincoder) {
-	w.ui16(&f.a)
-	w.ui32(&f.b)
+	w.UI16(&f.a)
+	w.UI32(&f.b)
 }
 
 func (f *bar) encode(w testCoder) {
-	w.ui16(&f.y)
+	w.UI16(&f.y)
 	w.foo(&f.foo)
-	w.ui32(&f.x)
+	w.UI32(&f.x)
 	w.fooSlice(&f.foos)
-	w.string(&f.name)
+	w.String(&f.name)
 }
 
 func TestFoo_marshall(t *testing.T) {
