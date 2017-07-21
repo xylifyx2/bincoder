@@ -80,10 +80,10 @@ func TestFoo_marshall(t *testing.T) {
 	}
 
 	var b bytes.Buffer
-	w := BinWriter{target: bufio.NewWriter(&b)}
+	w := BinWriter{Target: bufio.NewWriter(&b)}
 	w.foo(&o)
 	want := []byte{10, 0, 20, 0, 0, 0}
-	w.target.Flush()
+	w.Target.Flush()
 
 	got := b.Bytes()
 	if !reflect.DeepEqual(got, want) {
@@ -95,7 +95,7 @@ func TestFoo_unmarshall(t *testing.T) {
 	var b bytes.Buffer
 	b.Write([]byte{87, 0, 42, 0, 0, 0})
 
-	w := BinReader{source: bufio.NewReader(&b)}
+	w := BinReader{Source: bufio.NewReader(&b)}
 	got := foo{}
 	w.foo(&got)
 
@@ -129,12 +129,12 @@ func TestBar_marshall(t *testing.T) {
 	}
 	var b bytes.Buffer
 	writer := bufio.NewWriter(&b)
-	w := BinWriter{target: writer}
+	w := BinWriter{Target: writer}
 	w.bar(&want)
 	writer.Flush()
 
 	reader := bufio.NewReader(&b)
-	r := BinReader{source: reader}
+	r := BinReader{Source: reader}
 	got := bar{}
 	r.bar(&got)
 
