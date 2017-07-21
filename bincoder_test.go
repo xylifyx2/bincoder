@@ -28,11 +28,11 @@ type testCoder interface {
 	fooSlice(f *[]foo)
 }
 
-func (wire BinReader) foo(f *foo) {
+func (wire *BinReader) foo(f *foo) {
 	f.encode(wire)
 }
 
-func (wire BinWriter) foo(f *foo) {
+func (wire *BinWriter) foo(f *foo) {
 	f.encode(wire)
 }
 
@@ -44,19 +44,19 @@ func encodeFooSlice(f *[]foo, w testCoder) {
 	)
 }
 
-func (wire BinReader) fooSlice(f *[]foo) {
+func (wire *BinReader) fooSlice(f *[]foo) {
 	encodeFooSlice(f, wire)
 }
 
-func (wire BinWriter) fooSlice(f *[]foo) {
+func (wire *BinWriter) fooSlice(f *[]foo) {
 	encodeFooSlice(f, wire)
 }
 
-func (wire BinReader) bar(f *bar) {
+func (wire *BinReader) bar(f *bar) {
 	f.encode(wire)
 }
 
-func (wire BinWriter) bar(f *bar) {
+func (wire *BinWriter) bar(f *bar) {
 	f.encode(wire)
 }
 

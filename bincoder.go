@@ -26,44 +26,44 @@ type BinWriter struct {
 	target *bufio.Writer
 }
 
-func (coder BinReader) ui16(f *uint16) {
+func (coder *BinReader) ui16(f *uint16) {
 	buf := [2]byte{}
 	coder.source.Read(buf[0:2])
 	*f = binary.LittleEndian.Uint16(buf[0:2])
 }
 
-func (coder BinWriter) ui16(f *uint16) {
+func (coder *BinWriter) ui16(f *uint16) {
 	buf := [2]byte{}
 	binary.LittleEndian.PutUint16(buf[:], *f)
 	coder.target.Write(buf[:])
 }
 
-func (coder BinReader) ui32(f *uint32) {
+func (coder *BinReader) ui32(f *uint32) {
 	buf := [4]byte{}
 	coder.source.Read(buf[0:4])
 	*f = binary.LittleEndian.Uint32(buf[0:4])
 }
 
-func (coder BinWriter) ui32(f *uint32) {
+func (coder *BinWriter) ui32(f *uint32) {
 	buf := [4]byte{}
 	binary.LittleEndian.PutUint32(buf[:], *f)
 	coder.target.Write(buf[:])
 }
 
-func (coder BinReader) i(f *int) {
+func (coder *BinReader) i(f *int) {
 	buf := [4]byte{}
 	coder.source.Read(buf[0:4])
 	*f = int(binary.LittleEndian.Uint32(buf[0:4]))
 }
 
-func (coder BinWriter) i(f *int) {
+func (coder *BinWriter) i(f *int) {
 	buf := [4]byte{}
 	binary.LittleEndian.PutUint32(buf[:], uint32(*f))
 	coder.target.Write(buf[:])
 }
 
 // reads length [4]byte, entries [length*sizeof(E)]byte
-func (coder BinReader) slice(
+func (coder *BinReader) slice(
 	length func() int, constructor func(int), iterator func(int)) {
 	var size int
 	coder.i(&size)
@@ -74,7 +74,7 @@ func (coder BinReader) slice(
 }
 
 // writes length [4]byte, entries [length*sizeof(E)]byte
-func (coder BinWriter) slice(length func() int, constructor func(int),
+func (coder *BinWriter) slice(length func() int, constructor func(int),
 	iterator func(int)) {
 	size := length()
 	coder.i(&size) // writes the size of the slice
@@ -84,7 +84,7 @@ func (coder BinWriter) slice(length func() int, constructor func(int),
 }
 
 // reads size [4]byte, content [size]byte from source
-func (coder BinReader) string(f *string) {
+func (coder *BinReader) string(f *string) {
 	var size int
 	coder.i(&size)
 	c := make([]byte, size)
@@ -93,7 +93,7 @@ func (coder BinReader) string(f *string) {
 }
 
 // writes size [4]byte, content [size]byte to target
-func (coder BinWriter) string(f *string) {
+func (coder *BinWriter) string(f *string) {
 	c := []byte(*f)
 	size := len(c)
 	coder.i(&size)
