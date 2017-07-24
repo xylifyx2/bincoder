@@ -83,7 +83,7 @@ func TestFoo_marshall(t *testing.T) {
 	w := BinWriter{Target: bufio.NewWriter(&b)}
 	w.foo(&o)
 	want := []byte{10, 0, 20, 0, 0, 0}
-	w.Target.Flush()
+	w.Flush()
 
 	got := b.Bytes()
 	if !reflect.DeepEqual(got, want) {

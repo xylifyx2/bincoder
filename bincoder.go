@@ -15,7 +15,7 @@ type Bincoder interface {
 		constructor func(int),
 		iterate func(int),
 	)
-	ByteArray(f *[]byte, size int)
+	ByteArray(f []byte, size int)
 }
 
 // BinReader holds a bufio.Reader that is the Source of unmarshalling
@@ -26,6 +26,11 @@ type BinReader struct {
 // BinWriter holds a bufio.Writer that is the Target of marshalling
 type BinWriter struct {
 	Target *bufio.Writer
+}
+
+// Flush output to io.Writer
+func (coder *BinWriter) Flush() {
+	coder.Target.Flush()
 }
 
 // UI16 uint16 reader
@@ -123,11 +128,11 @@ func (coder *BinWriter) String(f *string) {
 }
 
 // ByteArray fixed size reader
-func (coder *BinReader) ByteArray(f *[]byte, size int) {
-	coder.Source.Read(*f)
+func (coder *BinReader) ByteArray(f []byte, size int) {
+	coder.Source.Read(f)
 }
 
 // ByteArray fixed size writer
-func (coder *BinWriter) ByteArray(f *[]byte, size int) {
-	coder.Target.Write(*f)
+func (coder *BinWriter) ByteArray(f []byte, size int) {
+	coder.Target.Write(f)
 }
