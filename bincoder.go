@@ -1,6 +1,5 @@
 package bincoder
 
-import "bufio"
 import "encoding/binary"
 
 // Bincoder that support basic builtin types
@@ -15,17 +14,52 @@ type Bincoder interface {
 		constructor func(int),
 		iterate func(int),
 	)
-	ByteArray(f []byte, size int)
+	Bytes(func() int, func() []byte, func([]byte))
+}
+
+// Reader interface
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+// Writer interface, required functions
+type Writer interface {
+	Write(p []byte) (n int, err error)
+	Flush() error
 }
 
 // BinReader holds a bufio.Reader that is the Source of unmarshalling
 type BinReader struct {
-	Source *bufio.Reader
+	err    error
+	Source Reader
+}
+
+func (coder *BinReader) Read(p []byte) (n int, err error) {
+	if coder.err != nil {
+		return 0, coder.err
+	}
+	n, err = coder.Source.Read(p)
+	if err != nil {
+		coder.err = err
+	}
+	return n, err
+}
+
+func (coder *BinWriter) Write(p []byte) (n int, err error) {
+	if coder.err != nil {
+		return 0, coder.err
+	}
+	n, err = coder.Target.Write(p)
+	if err != nil {
+		coder.err = err
+	}
+	return n, err
 }
 
 // BinWriter holds a bufio.Writer that is the Target of marshalling
 type BinWriter struct {
-	Target *bufio.Writer
+	err    error
+	Target Writer
 }
 
 // Flush output to io.Writer
@@ -36,7 +70,7 @@ func (coder *BinWriter) Flush() {
 // UI16 uint16 reader
 func (coder *BinReader) UI16(f *uint16) {
 	buf := [2]byte{}
-	coder.Source.Read(buf[0:2])
+	coder.Read(buf[0:2])
 	*f = binary.LittleEndian.Uint16(buf[0:2])
 }
 
@@ -44,13 +78,13 @@ func (coder *BinReader) UI16(f *uint16) {
 func (coder *BinWriter) UI16(f *uint16) {
 	buf := [2]byte{}
 	binary.LittleEndian.PutUint16(buf[:], *f)
-	coder.Target.Write(buf[:])
+	coder.Write(buf[:])
 }
 
 // UI32 uint32 reader
 func (coder *BinReader) UI32(f *uint32) {
 	buf := [4]byte{}
-	coder.Source.Read(buf[:])
+	coder.Read(buf[:])
 	*f = binary.LittleEndian.Uint32(buf[:])
 }
 
@@ -58,13 +92,13 @@ func (coder *BinReader) UI32(f *uint32) {
 func (coder *BinWriter) UI32(f *uint32) {
 	buf := [4]byte{}
 	binary.LittleEndian.PutUint32(buf[:], *f)
-	coder.Target.Write(buf[:])
+	coder.Write(buf[:])
 }
 
 // UI64 uint64 reader
 func (coder *BinReader) UI64(f *uint64) {
 	buf := [8]byte{}
-	coder.Source.Read(buf[:])
+	coder.Read(buf[:])
 	*f = binary.LittleEndian.Uint64(buf[:])
 }
 
@@ -72,13 +106,13 @@ func (coder *BinReader) UI64(f *uint64) {
 func (coder *BinWriter) UI64(f *uint64) {
 	buf := [8]byte{}
 	binary.LittleEndian.PutUint64(buf[:], *f)
-	coder.Target.Write(buf[:])
+	coder.Write(buf[:])
 }
 
 // Int int reader
 func (coder *BinReader) Int(f *int) {
 	buf := [4]byte{}
-	coder.Source.Read(buf[0:4])
+	coder.Read(buf[0:4])
 	*f = int(binary.LittleEndian.Uint32(buf[0:4]))
 }
 
@@ -86,7 +120,7 @@ func (coder *BinReader) Int(f *int) {
 func (coder *BinWriter) Int(f *int) {
 	buf := [4]byte{}
 	binary.LittleEndian.PutUint32(buf[:], uint32(*f))
-	coder.Target.Write(buf[:])
+	coder.Write(buf[:])
 }
 
 // Slice reads length [4]byte, entries [length*sizeof(E)]byte
@@ -115,7 +149,7 @@ func (coder *BinReader) String(f *string) {
 	var size int
 	coder.Int(&size)
 	c := make([]byte, size)
-	coder.Source.Read(c)
+	coder.Read(c)
 	*f = string(c)
 }
 
@@ -124,15 +158,35 @@ func (coder *BinWriter) String(f *string) {
 	c := []byte(*f)
 	size := len(c)
 	coder.Int(&size)
-	coder.Target.Write(c)
+	coder.Write(c)
 }
 
-// ByteArray fixed size reader
-func (coder *BinReader) ByteArray(f []byte, size int) {
-	coder.Source.Read(f)
+// Byte Slice
+func byteSliceCoder(f *[]byte, coder Bincoder, length int) {
+	coder.Bytes(func() int {
+		return length
+	}, func() []byte { return *f }, func(value []byte) {
+		*f = value
+	})
 }
 
-// ByteArray fixed size writer
-func (coder *BinWriter) ByteArray(f []byte, size int) {
-	coder.Target.Write(f)
+func (coder *BinReader) ByteSlice(f *[]byte, length int) {
+	byteSliceCoder(f, coder, length)
+}
+
+func (coder *BinWriter) ByteSlice(f *[]byte, length int) {
+	byteSliceCoder(f, coder, length)
+}
+
+// Bytes reader
+func (coder *BinReader) Bytes(length func() int,
+	getter func() []byte, setter func([]byte)) {
+	buf := make([]byte, length())
+	coder.Read(buf)
+}
+
+// Bytes writer
+func (coder *BinWriter) Bytes(length func() int,
+	getter func() []byte, setter func([]byte)) {
+	coder.Write(getter())
 }
