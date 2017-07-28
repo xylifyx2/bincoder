@@ -111,15 +111,15 @@ func (coder *BinWriter) UI64(f *uint64) {
 
 // Int int reader
 func (coder *BinReader) Int(f *int) {
-	buf := [4]byte{}
-	coder.Read(buf[0:4])
-	*f = int(binary.LittleEndian.Uint32(buf[0:4]))
+	buf := [8]byte{}
+	coder.Read(buf[:])
+	*f = int(binary.LittleEndian.Uint64(buf[:]))
 }
 
 // Int int writer
 func (coder *BinWriter) Int(f *int) {
-	buf := [4]byte{}
-	binary.LittleEndian.PutUint32(buf[:], uint32(*f))
+	buf := [8]byte{}
+	binary.LittleEndian.PutUint64(buf[:], uint64(*f))
 	coder.Write(buf[:])
 }
 
@@ -179,10 +179,13 @@ func (coder *BinWriter) ByteSlice(f *[]byte, length int) {
 }
 
 // Bytes reader
-func (coder *BinReader) Bytes(length func() int,
-	getter func() []byte, setter func([]byte)) {
+func (coder *BinReader) Bytes(
+	length func() int,
+	getter func() []byte,
+	setter func([]byte)) {
 	buf := make([]byte, length())
 	coder.Read(buf)
+	setter(buf)
 }
 
 // Bytes writer

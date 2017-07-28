@@ -14,11 +14,39 @@ type foo struct {
 }
 
 type bar struct {
-	x    uint32
-	foo  foo
-	y    uint16
-	foos []foo
-	name string
+	x       uint32
+	foo     foo
+	y       uint16
+	foos    []foo
+	name    string
+	z       uint64
+	integer int
+	data    [30]byte
+}
+
+func (f *bar) encode(w testCoder) {
+	w.UI16(&f.y)
+	w.foo(&f.foo)
+	w.UI32(&f.x)
+	w.fooSlice(&f.foos)
+	w.Bytes(
+		func() int { return 30 },
+		func() []byte { return f.data[:] },
+		func(data []byte) {
+			buf := [30]byte{}
+			copy(buf[:], data)
+			f.data = buf
+		})
+	w.String(&f.name)
+	w.UI64(&f.z)
+	w.Int(&f.integer)
+}
+func (wire *BinReader) bar(f *bar) {
+	f.encode(wire)
+}
+
+func (wire *BinWriter) bar(f *bar) {
+	f.encode(wire)
 }
 
 type testCoder interface {
@@ -52,25 +80,9 @@ func (wire *BinWriter) fooSlice(f *[]foo) {
 	encodeFooSlice(f, wire)
 }
 
-func (wire *BinReader) bar(f *bar) {
-	f.encode(wire)
-}
-
-func (wire *BinWriter) bar(f *bar) {
-	f.encode(wire)
-}
-
 func (f *foo) encode(w Bincoder) {
 	w.UI16(&f.a)
 	w.UI32(&f.b)
-}
-
-func (f *bar) encode(w testCoder) {
-	w.UI16(&f.y)
-	w.foo(&f.foo)
-	w.UI32(&f.x)
-	w.fooSlice(&f.foos)
-	w.String(&f.name)
 }
 
 func TestFoo_marshall(t *testing.T) {
@@ -111,7 +123,8 @@ func TestFoo_unmarshall(t *testing.T) {
 
 func TestBar_marshall(t *testing.T) {
 	want := bar{
-		x: 42, y: 87,
+		x: 42, y: 87, z: 1024 * 1024 * 1024 * 1024, integer: -87,
+
 		foo: foo{
 			a: 10,
 			b: 20,
@@ -125,18 +138,21 @@ func TestBar_marshall(t *testing.T) {
 				b: 14,
 			},
 		},
+		data: [30]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 128, 129, 130},
 		name: "Wire Marshall",
 	}
-	var b bytes.Buffer
-	writer := bufio.NewWriter(&b)
-	w := BinWriter{Target: writer}
-	w.bar(&want)
-	writer.Flush()
 
-	reader := bufio.NewReader(&b)
-	r := BinReader{Source: reader}
-	got := bar{}
-	r.bar(&got)
+	marshalled := Marshall(func(writer *bufio.Writer) {
+		w := BinWriter{Target: writer}
+		w.bar(&want)
+	})
+
+	var got bar
+
+	Unmarshall(func(reader *bufio.Reader) {
+		r := BinReader{Source: reader}
+		r.bar(&got)
+	}, marshalled)
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("%q. got %v, want %v", "version", got, want)
