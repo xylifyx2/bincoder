@@ -2,7 +2,6 @@ package bincoder
 
 import (
 	"bufio"
-	"bytes"
 	"reflect"
 	"testing"
 )
@@ -90,26 +89,26 @@ func TestFoo_marshall(t *testing.T) {
 		a: 10,
 		b: 20,
 	}
-
-	var b bytes.Buffer
-	w := BinWriter{Target: bufio.NewWriter(&b)}
-	w.foo(&o)
+	got := Marshall(func(writer *bufio.Writer) {
+		w := BinWriter{Target: writer}
+		w.foo(&o)
+	})
 	want := []byte{10, 0, 20, 0, 0, 0}
-	w.Flush()
 
-	got := b.Bytes()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("%q. got %v, want %v", "version", got, want)
 	}
 }
 
 func TestFoo_unmarshall(t *testing.T) {
-	var b bytes.Buffer
-	b.Write([]byte{87, 0, 42, 0, 0, 0})
 
-	w := BinReader{Source: bufio.NewReader(&b)}
-	got := foo{}
-	w.foo(&got)
+	var got foo
+
+	marshalled := []byte{87, 0, 42, 0, 0, 0}
+	Unmarshall(func(reader *bufio.Reader) {
+		r := BinReader{Source: reader}
+		r.foo(&got)
+	}, marshalled)
 
 	want := foo{
 		a: 87,
