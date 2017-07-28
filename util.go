@@ -6,7 +6,7 @@ import (
 )
 
 // Marshall to bytes
-func Marshall(m func(w *bufio.Writer)) []byte {
+func Marshall(m func(w Writer)) []byte {
 	var b bytes.Buffer
 	writer := bufio.NewWriter(&b)
 	m(writer)
@@ -15,7 +15,7 @@ func Marshall(m func(w *bufio.Writer)) []byte {
 }
 
 // Unmarshall from bytes
-func Unmarshall(m func(w *bufio.Reader), bin []byte) {
+func Unmarshall(m func(w Reader), bin []byte) {
 	var b bytes.Buffer
 	b.Write(bin)
 	reader := bufio.NewReader(&b)

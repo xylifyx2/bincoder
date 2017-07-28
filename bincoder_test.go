@@ -1,7 +1,6 @@
 package bincoder
 
 import (
-	"bufio"
 	"reflect"
 	"testing"
 )
@@ -89,7 +88,7 @@ func TestFoo_marshall(t *testing.T) {
 		a: 10,
 		b: 20,
 	}
-	got := Marshall(func(writer *bufio.Writer) {
+	got := Marshall(func(writer Writer) {
 		w := BinWriter{Target: writer}
 		w.foo(&o)
 	})
@@ -105,7 +104,7 @@ func TestFoo_unmarshall(t *testing.T) {
 	var got foo
 
 	marshalled := []byte{87, 0, 42, 0, 0, 0}
-	Unmarshall(func(reader *bufio.Reader) {
+	Unmarshall(func(reader Reader) {
 		r := BinReader{Source: reader}
 		r.foo(&got)
 	}, marshalled)
@@ -141,14 +140,14 @@ func TestBar_marshall(t *testing.T) {
 		name: "Wire Marshall",
 	}
 
-	marshalled := Marshall(func(writer *bufio.Writer) {
+	marshalled := Marshall(func(writer Writer) {
 		w := BinWriter{Target: writer}
 		w.bar(&want)
 	})
 
 	var got bar
 
-	Unmarshall(func(reader *bufio.Reader) {
+	Unmarshall(func(reader Reader) {
 		r := BinReader{Source: reader}
 		r.bar(&got)
 	}, marshalled)
