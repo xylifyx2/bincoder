@@ -1,9 +1,11 @@
 package bincoder
 
 import "encoding/binary"
+import "log"
 
 // Bincoder that support basic builtin types
 type Bincoder interface {
+	Error(err error)
 	UI16(f *uint16)
 	UI32(f *uint32)
 	UI64(f *uint64)
@@ -17,6 +19,16 @@ type Bincoder interface {
 	Bytes(func() int, func() []byte, func([]byte))
 }
 
+// SetReader updates the Source of the BinReader
+func (coder *BinReader) SetReader(reader Reader) {
+	coder.source = reader
+}
+
+// SetWriter updates the target of the BinWriter
+func (coder *BinWriter) SetWriter(writer Writer) {
+	coder.target = writer
+}
+
 // Reader interface
 type Reader interface {
 	Read(p []byte) (n int, err error)
@@ -28,17 +40,35 @@ type Writer interface {
 	Flush() error
 }
 
+// CoderBase is a base type of a Bincoder
+type CoderBase struct {
+	err error
+}
+
+func (coder *CoderBase) Error(err error) {
+	if coder.err == nil {
+		coder.err = err
+		log.Print(err)
+	}
+}
+
 // BinReader holds a bufio.Reader that is the Source of unmarshalling
 type BinReader struct {
-	err    error
-	Source Reader
+	CoderBase
+	source Reader
+}
+
+// BinWriter holds a bufio.Writer that is the target of marshalling
+type BinWriter struct {
+	CoderBase
+	target Writer
 }
 
 func (coder *BinReader) Read(p []byte) (n int, err error) {
 	if coder.err != nil {
 		return 0, coder.err
 	}
-	n, err = coder.Source.Read(p)
+	n, err = coder.source.Read(p)
 	if err != nil {
 		coder.err = err
 	}
@@ -49,22 +79,16 @@ func (coder *BinWriter) Write(p []byte) (n int, err error) {
 	if coder.err != nil {
 		return 0, coder.err
 	}
-	n, err = coder.Target.Write(p)
+	n, err = coder.target.Write(p)
 	if err != nil {
 		coder.err = err
 	}
 	return n, err
 }
 
-// BinWriter holds a bufio.Writer that is the Target of marshalling
-type BinWriter struct {
-	err    error
-	Target Writer
-}
-
 // Flush output to io.Writer
 func (coder *BinWriter) Flush() {
-	coder.Target.Flush()
+	coder.target.Flush()
 }
 
 // UI16 uint16 reader
@@ -153,7 +177,7 @@ func (coder *BinReader) String(f *string) {
 	*f = string(c)
 }
 
-// writes size [4]byte, content [size]byte to Target
+// writes size [4]byte, content [size]byte to target
 func (coder *BinWriter) String(f *string) {
 	c := []byte(*f)
 	size := len(c)

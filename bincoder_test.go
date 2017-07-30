@@ -89,7 +89,7 @@ func TestFoo_marshall(t *testing.T) {
 		b: 20,
 	}
 	got := Marshall(func(writer Writer) {
-		w := BinWriter{Target: writer}
+		w := BinWriter{target: writer}
 		w.foo(&o)
 	})
 	want := []byte{10, 0, 20, 0, 0, 0}
@@ -105,7 +105,7 @@ func TestFoo_unmarshall(t *testing.T) {
 
 	marshalled := []byte{87, 0, 42, 0, 0, 0}
 	Unmarshall(func(reader Reader) {
-		r := BinReader{Source: reader}
+		r := BinReader{source: reader}
 		r.foo(&got)
 	}, marshalled)
 
@@ -141,14 +141,14 @@ func TestBar_marshall(t *testing.T) {
 	}
 
 	marshalled := Marshall(func(writer Writer) {
-		w := BinWriter{Target: writer}
+		w := BinWriter{target: writer}
 		w.bar(&want)
 	})
 
 	var got bar
 
 	Unmarshall(func(reader Reader) {
-		r := BinReader{Source: reader}
+		r := BinReader{source: reader}
 		r.bar(&got)
 	}, marshalled)
 
