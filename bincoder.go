@@ -5,7 +5,8 @@ import "log"
 
 // Bincoder that support basic builtin types
 type Bincoder interface {
-	Error(err error)
+	SetError(err error)
+	Error() error
 	UI16(f *uint16)
 	UI32(f *uint32)
 	UI64(f *uint64)
@@ -50,11 +51,17 @@ type CoderBase struct {
 	err error
 }
 
-func (coder *CoderBase) Error(err error) {
+// SetError on the reader or writer
+func (coder *CoderBase) SetError(err error) {
 	if coder.err == nil {
 		coder.err = err
 		log.Print(err)
 	}
+}
+
+// Error get the error of a reader or writer
+func (coder *CoderBase) Error() error {
+	return coder.err
 }
 
 // BinReader holds a bufio.Reader that is the Source of unmarshalling
@@ -221,5 +228,13 @@ func (coder *BinReader) Bytes(
 // Bytes writer
 func (coder *BinWriter) Bytes(length int,
 	getter func() []byte, setter func([]byte)) {
-	coder.Write(getter())
+	b := getter()
+	if length > len(b) {
+		larger := make([]byte, length)
+		copy(larger, b)
+		b = larger
+	} else if length < len(b) {
+		b = b[0:length]
+	}
+	coder.Write(b)
 }
