@@ -28,7 +28,7 @@ func (f *bar) encode(w testCoder) {
 	w.UI32(&f.x)
 	w.fooSlice(&f.foos)
 	w.Bytes(
-		func() int { return 30 },
+		30,
 		func() []byte { return f.data[:] },
 		func(data []byte) {
 			buf := [30]byte{}

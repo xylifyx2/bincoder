@@ -10,13 +10,18 @@ type Bincoder interface {
 	UI32(f *uint32)
 	UI64(f *uint64)
 	Int(f *int)
+	// String coded as length followed by raw byte data
 	String(f *string)
+	// ByteSlice codes a []byte field
+	ByteSlice(f *[]byte, length int)
+	// Slice coder that codes any slice type
 	Slice(
 		length func() int,
 		constructor func(int),
 		iterate func(int),
 	)
-	Bytes(func() int, func() []byte, func([]byte))
+	// Codes raw bytes
+	Bytes(int, func() []byte, func([]byte))
 }
 
 // SetReader updates the Source of the BinReader
@@ -187,33 +192,34 @@ func (coder *BinWriter) String(f *string) {
 
 // Byte Slice
 func byteSliceCoder(f *[]byte, coder Bincoder, length int) {
-	coder.Bytes(func() int {
-		return length
-	}, func() []byte { return *f }, func(value []byte) {
-		*f = value
-	})
+	coder.Bytes(length,
+		func() []byte { return *f }, func(value []byte) {
+			*f = value
+		})
 }
 
+// ByteSlice field reader
 func (coder *BinReader) ByteSlice(f *[]byte, length int) {
 	byteSliceCoder(f, coder, length)
 }
 
+// ByteSlice field writer
 func (coder *BinWriter) ByteSlice(f *[]byte, length int) {
 	byteSliceCoder(f, coder, length)
 }
 
 // Bytes reader
 func (coder *BinReader) Bytes(
-	length func() int,
+	length int,
 	getter func() []byte,
 	setter func([]byte)) {
-	buf := make([]byte, length())
+	buf := make([]byte, length)
 	coder.Read(buf)
 	setter(buf)
 }
 
 // Bytes writer
-func (coder *BinWriter) Bytes(length func() int,
+func (coder *BinWriter) Bytes(length int,
 	getter func() []byte, setter func([]byte)) {
 	coder.Write(getter())
 }
