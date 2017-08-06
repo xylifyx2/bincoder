@@ -1,7 +1,10 @@
 package bincoder
 
-import "encoding/binary"
-import "log"
+import (
+	"encoding/binary"
+	"errors"
+	"log"
+)
 
 // Bincoder that support basic builtin types
 type Bincoder interface {
@@ -82,7 +85,7 @@ func (coder *BinReader) Read(p []byte) (n int, err error) {
 	}
 	n, err = coder.source.Read(p)
 	if err != nil {
-		coder.err = err
+		coder.SetError(err)
 	}
 	return n, err
 }
@@ -221,8 +224,14 @@ func (coder *BinReader) Bytes(
 	getter func() []byte,
 	setter func([]byte)) {
 	buf := make([]byte, length)
-	coder.Read(buf)
-	setter(buf)
+	n, err := coder.Read(buf)
+	if err != nil {
+		coder.SetError(err)
+	} else if n != length {
+		coder.SetError(errors.New("Expected " + string(length) + " got " + string(n) + " read bytes"))
+	} else {
+		setter(buf)
+	}
 }
 
 // Bytes writer
