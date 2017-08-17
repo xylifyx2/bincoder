@@ -157,7 +157,7 @@ func TestBar_marshall(t *testing.T) {
 	}
 }
 
-func TestBinReader_VarInt(t *testing.T) {
+func TestCoding_VarInt(t *testing.T) {
 	tests := []struct {
 		name         string
 		unmarshalled uint64
@@ -197,32 +197,6 @@ func TestBinReader_VarInt(t *testing.T) {
 			if !reflect.DeepEqual(expected, got) {
 				t.Errorf("%q. got %v, want %v", tt.name, got, expected)
 			}
-		})
-	}
-}
-
-func TestBinWriter_VarInt(t *testing.T) {
-	type fields struct {
-		CoderBase CoderBase
-		target    Writer
-	}
-	type args struct {
-		f *uint64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			coder := &BinWriter{
-				CoderBase: tt.fields.CoderBase,
-				target:    tt.fields.target,
-			}
-			coder.VarInt(tt.args.f)
 		})
 	}
 }
