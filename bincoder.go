@@ -21,7 +21,7 @@ type Bincoder interface {
 	ByteSlice(f *[]byte, length int)
 	// Slice coder that codes any slice type
 	Slice(
-		length func() int,
+		length int,
 		constructor func(int),
 		iterate func(int),
 	)
@@ -165,7 +165,7 @@ func (coder *BinWriter) Int(f *int) {
 
 // Slice reads length [4]byte, entries [length*sizeof(E)]byte
 func (coder *BinReader) Slice(
-	length func() int, constructor func(int), iterator func(int)) {
+	length int, constructor func(int), iterator func(int)) {
 	var size int
 	coder.Int(&size)
 	constructor(size)
@@ -175,9 +175,9 @@ func (coder *BinReader) Slice(
 }
 
 // Slice writes length [4]byte, entries [length*sizeof(E)]byte
-func (coder *BinWriter) Slice(length func() int, constructor func(int),
+func (coder *BinWriter) Slice(length int, constructor func(int),
 	iterator func(int)) {
-	size := length()
+	size := length
 	coder.Int(&size) // writes the size of the slice
 	for i := 0; i < size; i++ {
 		iterator(i)
