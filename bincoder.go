@@ -14,6 +14,7 @@ type Bincoder interface {
 	UI32(f *uint32)
 	UI64(f *uint64)
 	Int(f *int)
+	VarInt(f *uint64)
 	// String coded as length followed by raw byte data
 	String(f *string)
 	// ByteSlice codes a []byte field
@@ -246,4 +247,50 @@ func (coder *BinWriter) Bytes(length int,
 		b = b[0:length]
 	}
 	coder.Write(b)
+}
+
+// VarInt reader
+func (coder *BinReader) VarInt(f *uint64) {
+	buf := [9]byte{}
+	coder.Read(buf[0:1])
+	d := buf[0]
+	if d < 0xFD {
+		*f = uint64(d)
+	} else if d == 0xFD {
+		coder.Read(buf[1:3])
+		*f = uint64(binary.LittleEndian.Uint16(buf[1:3]))
+	} else if d == 0xFE {
+		coder.Read(buf[1:5])
+		*f = uint64(binary.LittleEndian.Uint32(buf[1:5]))
+	} else {
+		coder.Read(buf[1:9])
+		*f = binary.LittleEndian.Uint64(buf[1:9])
+	}
+}
+
+// VarInt writer
+func (coder *BinWriter) VarInt(f *uint64) {
+	n := *f
+	buf := []byte{}
+	if n < 0xFD {
+		buf = []byte{byte(n)}
+	} else if n < 0xFFFF {
+		// <= 0xFFFF	3	0xFD followed by the length as uint16_t
+		buf = make([]byte, 3)
+		buf[0] = 0xFD
+		binary.LittleEndian.PutUint16(buf[1:], uint16(n))
+	} else if n < 0xFFFFFFFF {
+		// <= 0xFFFF FFFF	5	0xFE followed by the length as uint32_t
+		buf = make([]byte, 5)
+		buf[0] = 0xFE
+		binary.LittleEndian.PutUint32(buf[1:], uint32(n))
+
+	} else {
+		// -	9	0xFF followed by the length as uint64_t
+		buf = make([]byte, 9)
+		buf[0] = 0xFF
+		binary.LittleEndian.PutUint64(buf[1:], uint64(n))
+	}
+
+	coder.Write(buf)
 }

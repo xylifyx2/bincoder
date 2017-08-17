@@ -156,3 +156,73 @@ func TestBar_marshall(t *testing.T) {
 		t.Errorf("%q. got %v, want %v", "version", got, want)
 	}
 }
+
+func TestBinReader_VarInt(t *testing.T) {
+	tests := []struct {
+		name         string
+		unmarshalled uint64
+		marshalled   []byte
+	}{
+		{"zero", 0, []byte{0}},
+		{"one", 1, []byte{1}},
+		{"0xFC", 0xFC, []byte{0xFC}},
+		{"0xFD", 0xFD, []byte{0xFD, 0xFD, 0}},
+		{"0xFE", 0xFE, []byte{0xFD, 0xFE, 0}},
+		{"0xFE", 0x12345678, []byte{0xFE, 0x78, 0x56, 0x34, 0x12}},
+		{"0xFF", 0x1234567812345678, []byte{0xFF, 0x78, 0x56, 0x34, 0x12, 0x78, 0x56, 0x34, 0x12}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got uint64
+			Unmarshall(func(reader Reader) {
+				r := BinReader{source: reader}
+				r.VarInt(&got)
+			}, tt.marshalled)
+			expected := tt.unmarshalled
+			if expected != got {
+				t.Errorf("%q. got %v, want %v", tt.name, got, expected)
+			}
+		})
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			unmarshalled := tt.unmarshalled
+			expected := tt.marshalled
+			got := Marshall(func(writer Writer) {
+				r := BinWriter{target: writer}
+				r.VarInt(&unmarshalled)
+			})
+			if !reflect.DeepEqual(expected, got) {
+				t.Errorf("%q. got %v, want %v", tt.name, got, expected)
+			}
+		})
+	}
+}
+
+func TestBinWriter_VarInt(t *testing.T) {
+	type fields struct {
+		CoderBase CoderBase
+		target    Writer
+	}
+	type args struct {
+		f *uint64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			coder := &BinWriter{
+				CoderBase: tt.fields.CoderBase,
+				target:    tt.fields.target,
+			}
+			coder.VarInt(tt.args.f)
+		})
+	}
+}
