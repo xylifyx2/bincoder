@@ -80,17 +80,21 @@ type BinWriter struct {
 	target Writer
 }
 
-func (coder *BinReader) Read(p []byte) (n int, err error) {
+func (coder *BinReader) Read(p []byte) (int, error) {
 	if coder.err != nil {
 		return 0, coder.err
 	}
-	n, err = coder.source.Read(p)
-	if n != len(p) {
-		coder.SetError(fmt.Errorf("Read %d bytes expected %d", n, len(p)))
-	} else if err != nil {
-		coder.SetError(err)
+	n := 0
+	for n < len(p) {
+		c, err := coder.source.Read(p[n:])
+		if err != nil {
+			coder.SetError(err)
+			return n + c, err
+		}
+		n += c
 	}
-	return n, err
+
+	return n, nil
 }
 
 func (coder *BinWriter) Write(p []byte) (n int, err error) {
@@ -214,10 +218,8 @@ func (coder *BinReader) Slice(
 	if coder.err != nil {
 		return
 	}
-	var size int
-	coder.Int(&size)
-	constructor(size)
-	for i := 0; i < size; i++ {
+	constructor(length)
+	for i := 0; i < length; i++ {
 		iterator(i)
 	}
 }
@@ -228,9 +230,7 @@ func (coder *BinWriter) Slice(length int, constructor func(int),
 	if coder.err != nil {
 		return
 	}
-	size := length
-	coder.Int(&size) // writes the size of the slice
-	for i := 0; i < size; i++ {
+	for i := 0; i < length; i++ {
 		iterator(i)
 	}
 }

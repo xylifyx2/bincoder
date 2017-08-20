@@ -63,8 +63,10 @@ func (wire *BinWriter) foo(f *foo) {
 }
 
 func encodeFooSlice(f *[]foo, w testCoder) {
+	size := len(*f)
+	w.Int(&size)
 	w.Slice(
-		len(*f),
+		size,
 		func(size int) { *f = make([]foo, size) },
 		func(i int) { w.foo(&(*f)[i]) },
 	)
