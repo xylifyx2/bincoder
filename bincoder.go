@@ -12,6 +12,7 @@ type Bincoder interface {
 	Error() error
 	UI16(f *uint16)
 	UI32(f *uint32)
+	I32(f *int32)
 	UI64(f *uint64)
 	Int(f *int)
 	VarInt(f *uint64)
@@ -118,10 +119,7 @@ func (coder *BinWriter) Flush() {
 // UI16 uint16 reader
 func (coder *BinReader) UI16(f *uint16) {
 	buf := [2]byte{}
-	if coder.err != nil {
-		return
-	}
-	_, err := coder.Read(buf[0:2])
+	_, err := coder.Read(buf[:])
 	if err != nil {
 		return
 	}
@@ -130,9 +128,6 @@ func (coder *BinReader) UI16(f *uint16) {
 
 // UI16 uint16 writer
 func (coder *BinWriter) UI16(f *uint16) {
-	if coder.err != nil {
-		return
-	}
 	buf := [2]byte{}
 	binary.LittleEndian.PutUint16(buf[:], *f)
 	_, err := coder.Write(buf[:])
@@ -143,9 +138,6 @@ func (coder *BinWriter) UI16(f *uint16) {
 
 // UI32 uint32 reader
 func (coder *BinReader) UI32(f *uint32) {
-	if coder.err != nil {
-		return
-	}
 	buf := [4]byte{}
 	_, err := coder.Read(buf[:])
 	if err != nil {
@@ -164,15 +156,28 @@ func (coder *BinWriter) UI32(f *uint32) {
 	coder.Write(buf[:])
 }
 
-// UI64 uint64 reader
-func (coder *BinReader) UI64(f *uint64) {
-	if coder.err != nil {
-		return
-	}
-	buf := [8]byte{}
+// UI32 uint32 reader
+func (coder *BinReader) I32(f *int32) {
+	var buf [4]byte
 	_, err := coder.Read(buf[:])
 	if err != nil {
-		coder.SetError(err)
+		return
+	}
+	*f = int32(binary.LittleEndian.Uint32(buf[:]))
+}
+
+// UI32 uint32 writer
+func (coder *BinWriter) I32(f *int32) {
+	var buf [4]byte
+	binary.LittleEndian.PutUint32(buf[:], uint32(*f))
+	coder.Write(buf[:])
+}
+
+// UI64 uint64 reader
+func (coder *BinReader) UI64(f *uint64) {
+	var buf [8]byte
+	_, err := coder.Read(buf[:])
+	if err != nil {
 		return
 	}
 	*f = binary.LittleEndian.Uint64(buf[:])
@@ -180,23 +185,16 @@ func (coder *BinReader) UI64(f *uint64) {
 
 // UI64 uint64 writer
 func (coder *BinWriter) UI64(f *uint64) {
-	if coder.err != nil {
-		return
-	}
-	buf := [8]byte{}
+	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], *f)
 	coder.Write(buf[:])
 }
 
 // Int int reader
 func (coder *BinReader) Int(f *int) {
-	if coder.err != nil {
-		return
-	}
-	buf := [8]byte{}
+	var buf [8]byte
 	_, err := coder.Read(buf[:])
 	if err != nil {
-		coder.SetError(err)
 		return
 	}
 	*f = int(binary.LittleEndian.Uint64(buf[:]))
@@ -204,10 +202,7 @@ func (coder *BinReader) Int(f *int) {
 
 // Int int writer
 func (coder *BinWriter) Int(f *int) {
-	if coder.err != nil {
-		return
-	}
-	buf := [8]byte{}
+	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], uint64(*f))
 	coder.Write(buf[:])
 }
@@ -240,8 +235,8 @@ func (coder *BinReader) String(f *string) {
 	if coder.err != nil {
 		return
 	}
-	var size int
-	coder.Int(&size)
+	var size uint64
+	coder.VarInt(&size)
 	c := make([]byte, size)
 	coder.Read(c)
 	*f = string(c)
@@ -253,8 +248,8 @@ func (coder *BinWriter) String(f *string) {
 		return
 	}
 	c := []byte(*f)
-	size := len(c)
-	coder.Int(&size)
+	size := uint64(len(c))
+	coder.VarInt(&size)
 	coder.Write(c)
 }
 
