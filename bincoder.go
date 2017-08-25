@@ -14,6 +14,7 @@ type Bincoder interface {
 	UI32(f *uint32)
 	I32(f *int32)
 	UI64(f *uint64)
+	I64(f *int64)
 	Int(f *int)
 	VarInt(f *uint64)
 	// String coded as length followed by raw byte data
@@ -202,6 +203,23 @@ func (coder *BinReader) Int(f *int) {
 
 // Int int writer
 func (coder *BinWriter) Int(f *int) {
+	var buf [8]byte
+	binary.LittleEndian.PutUint64(buf[:], uint64(*f))
+	coder.Write(buf[:])
+}
+
+// Int int reader
+func (coder *BinReader) I64(f *int64) {
+	var buf [8]byte
+	_, err := coder.Read(buf[:])
+	if err != nil {
+		return
+	}
+	*f = int64(binary.LittleEndian.Uint64(buf[:]))
+}
+
+// Int int writer
+func (coder *BinWriter) I64(f *int64) {
 	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], uint64(*f))
 	coder.Write(buf[:])
