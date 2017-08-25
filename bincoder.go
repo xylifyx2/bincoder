@@ -16,7 +16,7 @@ type Bincoder interface {
 	UI64(f *uint64)
 	I64(f *int64)
 	Int(f *int)
-	VarInt(f *uint64)
+	VarInt(f *int)
 	// String coded as length followed by raw byte data
 	String(f *string)
 	// ByteSlice codes a []byte field
@@ -250,10 +250,7 @@ func (coder *BinWriter) Slice(length int, constructor func(int),
 
 // reads size [4]byte, content [size]byte from Source
 func (coder *BinReader) String(f *string) {
-	if coder.err != nil {
-		return
-	}
-	var size uint64
+	var size int
 	coder.VarInt(&size)
 	c := make([]byte, size)
 	coder.Read(c)
@@ -262,11 +259,8 @@ func (coder *BinReader) String(f *string) {
 
 // writes size [4]byte, content [size]byte to target
 func (coder *BinWriter) String(f *string) {
-	if coder.err != nil {
-		return
-	}
 	c := []byte(*f)
-	size := uint64(len(c))
+	size := len(c)
 	coder.VarInt(&size)
 	coder.Write(c)
 }
@@ -322,7 +316,7 @@ func (coder *BinWriter) Bytes(length int,
 }
 
 // VarInt reader
-func (coder *BinReader) VarInt(f *uint64) {
+func (coder *BinReader) VarInt(f *int) {
 	if coder.err != nil {
 		return
 	}
@@ -333,30 +327,30 @@ func (coder *BinReader) VarInt(f *uint64) {
 	}
 	d := buf[0]
 	if d < 0xFD {
-		*f = uint64(d)
+		*f = int(d)
 	} else if d == 0xFD {
 		_, err = coder.Read(buf[1:3])
 		if err != nil {
 			return
 		}
-		*f = uint64(binary.LittleEndian.Uint16(buf[1:3]))
+		*f = int(binary.LittleEndian.Uint16(buf[1:3]))
 	} else if d == 0xFE {
 		_, err = coder.Read(buf[1:5])
 		if err != nil {
 			return
 		}
-		*f = uint64(binary.LittleEndian.Uint32(buf[1:5]))
+		*f = int(binary.LittleEndian.Uint32(buf[1:5]))
 	} else {
 		_, err = coder.Read(buf[1:9])
 		if err != nil {
 			return
 		}
-		*f = binary.LittleEndian.Uint64(buf[1:9])
+		*f = int(binary.LittleEndian.Uint64(buf[1:9]))
 	}
 }
 
 // VarInt writer
-func (coder *BinWriter) VarInt(f *uint64) {
+func (coder *BinWriter) VarInt(f *int) {
 	n := *f
 	buf := []byte{}
 	if n < 0xFD {
